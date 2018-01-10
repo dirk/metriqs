@@ -1,3 +1,8 @@
+#[macro_use]
+extern crate nom;
+
+extern crate string_cache;
+
 /// How metrics come into the agent.
 pub mod recv;
 

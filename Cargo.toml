@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["Dirk Gadsden <dirk@esherido.com>"]
 
 [dependencies]
+nom = "3.2.1"
+string_cache = "0.7.1"

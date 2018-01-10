@@ -1,0 +1,6 @@
+[package]
+name = "metriqs"
+version = "0.1.0"
+authors = ["Dirk Gadsden <dirk@esherido.com>"]
+
+[dependencies]

@@ -98,10 +98,13 @@ named!(double<&[u8], f64>,
     map_res!(
         map_res!(
             recognize!(
-                alt_complete!(
-                    delimited!(digit, tag!("."), opt!(complete!(digit))) |
-                    delimited!(opt!(digit), tag!("."), digit)            |
-                    digit
+                tuple!(
+                    opt!(tag!("-")),
+                    alt_complete!(
+                        delimited!(digit, tag!("."), opt!(complete!(digit))) |
+                        delimited!(opt!(digit), tag!("."), digit)            |
+                        digit
+                    )
                 )
             ),
             str::from_utf8
@@ -146,6 +149,11 @@ mod tests {
         assert_eq!(
             double(&b"2.5"[..]),
             complete(2.5)
+        );
+        // Negative
+        assert_eq!(
+            double(&b"-2"[..]),
+            complete(-2.0)
         );
     }
 

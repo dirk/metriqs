@@ -51,6 +51,28 @@ named!(counter<StatsdMetric>,
     )
 );
 
+named!(gauge<StatsdMetric>,
+    do_parse!(
+         name: metric_name >>
+               tag!(":")   >>
+        value: double      >>
+               tag!("|g")  >>
+
+        (StatsdMetric::Gauge(Atom::from(name), value))
+    )
+);
+
+named!(timer<StatsdMetric>,
+    do_parse!(
+         name: metric_name >>
+               tag!(":")   >>
+        value: double      >>
+               tag!("|ms") >>
+
+        (StatsdMetric::Timer(Atom::from(name), value, None))
+    )
+);
+
 fn metric_name(i: &[u8]) -> IResult<&[u8], &str> {
     #[inline]
     fn is_metric_name_char(i: u8) -> bool {
@@ -132,6 +154,22 @@ mod tests {
         assert_eq!(
             counter(&b"foo.bar_baz:23|c"[..]),
             complete(StatsdMetric::Counter(Atom::from("foo.bar_baz"), 23.0, None))
-        )
+        );
+    }
+
+    #[test]
+    fn it_parses_gauge() {
+        assert_eq!(
+            gauge(&b"foo.bar_baz:12|g"[..]),
+            complete(StatsdMetric::Gauge(Atom::from("foo.bar_baz"), 12.0))
+        );
+    }
+
+    #[test]
+    fn it_parses_timer() {
+        assert_eq!(
+            timer(&b"foo.bar_baz:12|ms"[..]),
+            complete(StatsdMetric::Timer(Atom::from("foo.bar_baz"), 12.0, None))
+        );
     }
 }

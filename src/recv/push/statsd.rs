@@ -73,19 +73,14 @@ named!(timer<StatsdMetric>,
     )
 );
 
-fn metric_name(i: &[u8]) -> IResult<&[u8], &str> {
-    #[inline]
-    fn is_metric_name_char(i: u8) -> bool {
-        let c = char::from_u32(i as u32).unwrap();
-
-        is_alphanumeric(i) || c == '.' || c == '_'
-    }
-
-    map_res!(i,
-        take_while!(is_metric_name_char),
+named!(metric_name<&str>,
+    map_res!(
+        take_while!(call!(|c| {
+            is_alphanumeric(c) || c == b'.' || c == b'_'
+        })),
         str::from_utf8
     )
-}
+);
 
 named!(sample_rate<&[u8], f64>,
     preceded!(
@@ -130,7 +125,15 @@ mod tests {
         assert_eq!(
             metric_name(&b"foo"[..]),
             complete("foo")
-        )
+        );
+        assert_eq!(
+            metric_name(&b"foo.bar"[..]),
+            complete("foo.bar")
+        );
+        assert_eq!(
+            metric_name(&b"foo_bar"[..]),
+            complete("foo_bar")
+        );
     }
 
     #[test]

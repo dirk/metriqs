@@ -14,10 +14,10 @@ pub struct ParseError {
 pub enum StatsdMetric {
     /// Name, value, sample rate
     Counter(Atom, f64, Option<f64>),
-    /// Name, value, sample rate
-    Timer(Atom, f64, Option<f64>),
     /// Name, value
     Gauge(Atom, f64),
+    /// Name, value, sample rate
+    Timer(Atom, f64, Option<f64>),
 }
 
 pub fn parse_metrics(i: &[u8]) -> Result<Vec<StatsdMetric>, ParseError> {
@@ -39,7 +39,7 @@ pub fn parse_metrics(i: &[u8]) -> Result<Vec<StatsdMetric>, ParseError> {
 
 pub type ParseResult<'a> = IResult<&'a [u8], StatsdMetric>;
 
-named!(counter<&[u8], StatsdMetric>,
+named!(counter<StatsdMetric>,
     do_parse!(
                 name: metric_name                  >>
                       tag!(":")                    >>

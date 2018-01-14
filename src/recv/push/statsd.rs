@@ -1,11 +1,9 @@
-use std::char;
-use std::str;
-use std::str::FromStr;
+use std::str::{self, FromStr};
 
 use nom::{digit, is_alphanumeric, IResult};
 use string_cache::DefaultAtom as Atom;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ParseError {
     description: String,
 }
@@ -20,24 +18,26 @@ pub enum StatsdMetric {
     Timer(Atom, f64, Option<f64>),
 }
 
-pub fn parse_metrics(i: &[u8]) -> Result<Vec<StatsdMetric>, ParseError> {
-    let result = complete!(i,
-        separated_nonempty_list!(
-            tag!("\n"),
-            alt_complete!(
-                counter
-            )
-        )
-    );
+pub fn parse_metrics<'a>(i: &'a [u8]) -> Result<Vec<StatsdMetric>, ParseError> {
+    let result = complete!(i, call!(metrics));
 
     match result {
         IResult::Done(_, metrics) => Ok(metrics),
-        IResult::Error(err) => Err(ParseError{ description: err.description().to_owned() }),
+        IResult::Error(err) => Err(ParseError{ description: format!("{:?}", err) }),
         IResult::Incomplete(_) => unreachable!(),
     }
 }
 
-pub type ParseResult<'a> = IResult<&'a [u8], StatsdMetric>;
+named!(metrics<Vec<StatsdMetric>>,
+    separated_nonempty_list_complete!(
+        tag!("\n"),
+        alt_complete!(
+            counter |
+            gauge   |
+            timer
+        )
+    )
+);
 
 named!(counter<StatsdMetric>,
     do_parse!(
@@ -181,6 +181,18 @@ mod tests {
         assert_eq!(
             timer(&b"foo.bar_baz:12|ms"[..]),
             complete(StatsdMetric::Timer(Atom::from("foo.bar_baz"), 12.0, None))
+        );
+    }
+
+    #[test]
+    fn it_parses_metrics() {
+        assert_eq!(
+            parse_metrics(&b"foo:1|g\nbar:2|c|@3\nbaz:4|ms"[..]),
+            Ok(vec![
+                StatsdMetric::Gauge(Atom::from("foo"), 1.0),
+                StatsdMetric::Counter(Atom::from("bar"), 2.0, None),
+                StatsdMetric::Timer(Atom::from("baz"), 4.0, None),
+            ])
         );
     }
 }

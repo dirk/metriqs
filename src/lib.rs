@@ -3,6 +3,9 @@ extern crate nom;
 
 extern crate string_cache;
 
+pub mod db;
+pub mod metric;
+
 /// How metrics come into the agent.
 pub mod recv;
 

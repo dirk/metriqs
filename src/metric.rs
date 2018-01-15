@@ -18,12 +18,14 @@ pub type Dimension = (Atom, Atom);
 
 pub type Id = (Atom, Vec<Dimension>);
 
+#[derive(Debug, PartialEq)]
 pub enum CollectedMetric {
     Count(Id),
     Gauge(Id),
     Histogram(Id),
 }
 
+#[derive(Debug, PartialEq)]
 pub enum AggregatedMetric {
     Count(Id),
     Gauge(Id),

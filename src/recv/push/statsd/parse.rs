@@ -3,6 +3,8 @@ use std::str::{self, FromStr};
 use nom::{digit, is_alphanumeric, IResult};
 use string_cache::DefaultAtom as Atom;
 
+use super::super::super::super::metric::CollectedMetric;
+
 #[derive(Debug, PartialEq)]
 pub struct ParseError {
     description: String,
@@ -16,6 +18,18 @@ pub enum StatsdMetric {
     Gauge(Atom, f64),
     /// Name, value, sample rate
     Timer(Atom, f64, Option<f64>),
+}
+
+impl Into<CollectedMetric> for StatsdMetric {
+    fn into(self) -> CollectedMetric {
+        use self::StatsdMetric::*;
+
+        match self {
+            Counter(name, _, _) => CollectedMetric::Count((name, vec![])),
+            Gauge(name, _) => CollectedMetric::Gauge((name, vec![])),
+            Timer(name, _, _) => CollectedMetric::Histogram((name, vec![])),
+        }
+    }
 }
 
 pub fn parse_metrics<'a>(i: &'a [u8]) -> Result<Vec<StatsdMetric>, ParseError> {

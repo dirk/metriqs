@@ -6,3 +6,5 @@
 
 pub mod push;
 pub mod pull;
+
+mod collector;

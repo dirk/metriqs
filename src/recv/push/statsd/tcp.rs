@@ -13,9 +13,9 @@ pub struct StatsdTcpListener {
 }
 
 impl StatsdTcpListener {
-    pub fn new() -> StatsdTcpListener {
+    pub fn new(collector: Collector) -> StatsdTcpListener {
         StatsdTcpListener {
-            collector: Collector::new(),
+            collector: collector,
         }
     }
 
@@ -31,9 +31,11 @@ impl StatsdTcpListener {
         for line in recv {
             match parse_metrics(line.trim_right().as_bytes()) {
                 Ok(metrics) => {
-                    for metric in metrics {
-                        self.collector.push(metric.into())
-                    }
+                    let aggregated_metrics = metrics.into_iter()
+                        .map(|metric| metric.into())
+                        .collect();
+
+                    self.collector.push(aggregated_metrics)
                 },
                 Err(_) => (),
             }

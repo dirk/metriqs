@@ -8,3 +8,5 @@ pub mod push;
 pub mod pull;
 
 mod collector;
+
+pub use self::collector::Collector;

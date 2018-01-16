@@ -1,19 +1,19 @@
-use std::collections::VecDeque;
+use std::sync::mpsc::Sender;
 
 use super::super::metric::CollectedMetric;
 
 pub struct Collector {
-    buf: VecDeque<CollectedMetric>,
+    sender: Sender<Vec<CollectedMetric>>,
 }
 
 impl Collector {
-    pub fn new() -> Collector {
+    pub fn new(sender: Sender<Vec<CollectedMetric>>) -> Collector {
         Collector {
-            buf: VecDeque::new(),
+            sender: sender,
         }
     }
 
-    pub fn push(&mut self, metric: CollectedMetric) {
-        self.buf.push_back(metric)
+    pub fn push(&self, metrics: Vec<CollectedMetric>) {
+        let _ = self.sender.send(metrics);
     }
 }

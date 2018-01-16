@@ -4,6 +4,7 @@ use std::cell::Cell;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread;
 use std::time::{Duration, SystemTime};
 
 use super::recv::Collector;
@@ -42,9 +43,18 @@ impl Db {
     }
 
     /// Blocking loop to receive metrics from `Collector`s.
-    pub fn recv(&self) {
+    pub fn sync_recv(&self) {
         for metrics in &self.collection_receiver {
             self.collect(metrics)
+        }
+    }
+
+    /// Blocking loop to aggregate collected metrics.
+    pub fn sync_aggregate(&self) {
+        loop {
+            self.aggregate();
+
+            thread::sleep(self.aggregation_interval);
         }
     }
 

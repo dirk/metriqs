@@ -25,9 +25,9 @@ impl Into<CollectedMetric> for StatsdMetric {
         use self::StatsdMetric::*;
 
         match self {
-            Counter(name, _, _) => CollectedMetric::Count((name, vec![])),
-            Gauge(name, _) => CollectedMetric::Gauge((name, vec![])),
-            Timer(name, _, _) => CollectedMetric::Histogram((name, vec![])),
+            Counter(name, value, _) => CollectedMetric::Count((name, vec![]), value as i32),
+            Gauge(name, value)      => CollectedMetric::Gauge((name, vec![]), value as i32),
+            Timer(name, value, _)   => CollectedMetric::Histogram((name, vec![]), value as i32),
         }
     }
 }

@@ -15,12 +15,11 @@ pub struct StatsdTcpListener {
 impl StatsdTcpListener {
     pub fn new(collector: Collector) -> StatsdTcpListener {
         StatsdTcpListener {
-            collector: collector,
+            collector,
         }
     }
 
-    pub fn listen<A>(&mut self, addr: A)
-        where A: ToSocketAddrs {
+    pub fn listen<A: ToSocketAddrs>(&mut self, addr: A) {
         let (send, recv) = channel();
 
         let listener = TcpListener::bind(addr).unwrap();

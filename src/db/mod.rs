@@ -55,8 +55,6 @@ impl Db {
 
     // TODO: Add a window option to the call.
     pub fn aggregate(&self) {
-        let now = SystemTime::now();
-
         // Get all the collected metrics; replaces it with an empty `Vec`
         // before releasing the lock so that other threads can continue
         // adding metrics.
@@ -75,9 +73,9 @@ impl Db {
         let mut cell = self.aggregated_metrics.lock().unwrap();
         let aggregated_metrics = cell.get_mut();
         for metric in aggregated {
-            let (key, value) = metric.into();
+            let (key, timeseries) = metric.into();
             let values = aggregated_metrics.entry(key).or_insert_with(|| vec![]);
-            values.push((now, value))
+            values.push(timeseries)
         }
     }
 }
@@ -90,15 +88,15 @@ enum AggregatedKey {
     Gauge(Id),
 }
 
-impl Into<(AggregatedKey, i32)> for AggregatedMetric {
+impl Into<(AggregatedKey, (SystemTime, i32))> for AggregatedMetric {
     /// Convert an aggregated metric into a key and value for storage in the
     /// database's key-value store.
-    fn into(self) -> (AggregatedKey, i32) {
+    fn into(self) -> (AggregatedKey, (SystemTime, i32)) {
         use self::AggregatedMetric::*;
 
         match self {
-            Count(id, value) => (AggregatedKey::Count(id), value),
-            Gauge(id, value) => (AggregatedKey::Gauge(id), value),
+            Count(time, id, value) => (AggregatedKey::Count(id), (time, value)),
+            Gauge(time, id, value) => (AggregatedKey::Gauge(id), (time, value)),
         }
     }
 }

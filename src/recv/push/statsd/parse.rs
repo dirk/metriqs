@@ -1,4 +1,5 @@
 use std::str::{self, FromStr};
+use std::time::{SystemTime};
 
 use nom::{digit, is_alphanumeric, IResult};
 use string_cache::DefaultAtom as Atom;
@@ -24,10 +25,12 @@ impl Into<CollectedMetric> for StatsdMetric {
     fn into(self) -> CollectedMetric {
         use self::StatsdMetric::*;
 
+        let now = SystemTime::now();
+
         match self {
-            Counter(name, value, _) => CollectedMetric::Count((name, vec![]), value as i32),
-            Gauge(name, value)      => CollectedMetric::Gauge((name, vec![]), value as i32),
-            Timer(name, value, _)   => CollectedMetric::Histogram((name, vec![]), value as i32),
+            Counter(name, value, _) => CollectedMetric::Count(now, (name, vec![]), value as i32),
+            Gauge(name, value)      => CollectedMetric::Gauge(now, (name, vec![]), value as i32),
+            Timer(name, value, _)   => CollectedMetric::Histogram(now, (name, vec![]), value as i32),
         }
     }
 }

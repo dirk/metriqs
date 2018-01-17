@@ -16,6 +16,18 @@ use self::aggregate::AggregatedMetric;
 
 type Timeseries = (SystemTime, i32);
 
+pub struct DbOptions {
+    pub aggregation_interval: Option<Duration>,
+}
+
+impl Default for DbOptions {
+    fn default() -> DbOptions {
+        DbOptions {
+            aggregation_interval: None,
+        }
+    }
+}
+
 pub struct Db {
     collection_sender: Sender<Vec<CollectedMetric>>,
     collection_receiver: Receiver<Vec<CollectedMetric>>,
@@ -27,14 +39,16 @@ pub struct Db {
 }
 
 impl Db {
-    pub fn new() -> Db {
+    pub fn new(options: DbOptions) -> Db {
+        let aggregation_interval = options.aggregation_interval.unwrap_or_else(|| Duration::new(10, 0));
+
         let (send, recv) = channel();
 
         Db {
             collection_sender: send,
             collection_receiver: recv,
             collected_metrics: Mutex::new(Cell::new(vec![])),
-            aggregation_interval: Duration::new(10, 0),
+            aggregation_interval,
             aggregation_subscribers: Mutex::new(Cell::new(vec![])),
             aggregated_metrics: Some(Mutex::new(Cell::new(HashMap::new()))),
         }

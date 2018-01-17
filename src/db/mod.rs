@@ -2,6 +2,7 @@
 
 use std::cell::Cell;
 use std::collections::HashMap;
+use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
@@ -122,6 +123,13 @@ impl Db {
         subscribers.push(send);
 
         recv
+    }
+}
+
+impl fmt::Debug for Db {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("Db")
+            .finish()
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "metriqs"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Dirk Gadsden <dirk@esherido.com>"]
 description = "Metrics infrastructure framework"
 license = "BSD-3-Clause"

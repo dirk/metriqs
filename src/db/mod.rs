@@ -2,7 +2,7 @@
 
 use std::cell::Cell;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 use std::time::{Duration, SystemTime};
@@ -22,7 +22,8 @@ pub struct Db {
     /// Collected metrics awaiting aggregation.
     collected_metrics: Mutex<Cell<Vec<CollectedMetric>>>,
     aggregation_interval: Duration,
-    aggregated_metrics: Mutex<Cell<HashMap<AggregatedKey, Vec<Timeseries>>>>,
+    aggregation_subscribers: Mutex<Cell<Vec<Sender<Arc<Vec<AggregatedMetric>>>>>>,
+    aggregated_metrics: Option<Mutex<Cell<HashMap<AggregatedKey, Vec<Timeseries>>>>>,
 }
 
 impl Db {
@@ -34,7 +35,8 @@ impl Db {
             collection_receiver: recv,
             collected_metrics: Mutex::new(Cell::new(vec![])),
             aggregation_interval: Duration::new(10, 0),
-            aggregated_metrics: Mutex::new(Cell::new(HashMap::new())),
+            aggregation_subscribers: Mutex::new(Cell::new(vec![])),
+            aggregated_metrics: Some(Mutex::new(Cell::new(HashMap::new()))),
         }
     }
 
@@ -80,13 +82,32 @@ impl Db {
         // Roll up each metric.
         let aggregated = aggregate::aggregate(grouped);
 
-        let mut cell = self.aggregated_metrics.lock().unwrap();
-        let aggregated_metrics = cell.get_mut();
-        for metric in aggregated {
-            let (key, timeseries) = metric.into();
-            let values = aggregated_metrics.entry(key).or_insert_with(|| vec![]);
-            values.push(timeseries)
+        if let Some(ref mutex) = self.aggregated_metrics {
+            let mut cell = mutex.lock().unwrap();
+            let aggregated_metrics = cell.get_mut();
+            for metric in aggregated.clone() {
+                let (key, timeseries) = metric.into();
+                let values = aggregated_metrics.entry(key).or_insert_with(|| vec![]);
+                values.push(timeseries)
+            }
         }
+
+        let mut cell = self.aggregation_subscribers.lock().unwrap();
+        let subscribers = cell.get_mut();
+        let ptr = Arc::new(aggregated);
+        for subscriber in subscribers {
+            let _ = subscriber.send(ptr.clone());
+        }
+    }
+
+    pub fn aggregation_subscribe(&self) -> Receiver<Arc<Vec<AggregatedMetric>>> {
+        let (send, recv) = channel();
+
+        let mut cell = self.aggregation_subscribers.lock().unwrap();
+        let subscribers = cell.get_mut();
+        subscribers.push(send);
+
+        recv
     }
 }
 

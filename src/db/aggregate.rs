@@ -31,6 +31,7 @@ pub fn group<T: AsRef<Vec<CollectedMetric>>>(metrics: T) -> GroupedMetrics {
     grouped
 }
 
+#[derive(Clone)]
 pub enum AggregatedMetric {
     Count(SystemTime, Id, i32),
     Gauge(SystemTime, Id, i32),

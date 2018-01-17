@@ -30,8 +30,8 @@ impl Default for DbOptions {
 }
 
 pub struct Db {
-    collection_sender: Sender<Vec<CollectedMetric>>,
-    collection_receiver: Receiver<Vec<CollectedMetric>>,
+    collection_sender: Mutex<Sender<Vec<CollectedMetric>>>,
+    collection_receiver: Mutex<Receiver<Vec<CollectedMetric>>>,
     /// Collected metrics awaiting aggregation.
     collected_metrics: Mutex<Cell<Vec<CollectedMetric>>>,
     aggregation_interval: Duration,
@@ -46,8 +46,8 @@ impl Db {
         let (send, recv) = channel();
 
         Db {
-            collection_sender: send,
-            collection_receiver: recv,
+            collection_sender: Mutex::new(send),
+            collection_receiver: Mutex::new(recv),
             collected_metrics: Mutex::new(Cell::new(vec![])),
             aggregation_interval,
             aggregation_subscribers: Mutex::new(Cell::new(vec![])),
@@ -56,12 +56,17 @@ impl Db {
     }
 
     pub fn collector(&self) -> Collector {
-        Collector::new(self.collection_sender.clone())
+        let sender = {
+            self.collection_sender.lock().unwrap().clone()
+        };
+        Collector::new(sender)
     }
 
-    /// Blocking loop to receive metrics from `Collector`s.
+    /// Blocking loop to receive metrics from `Collector`s. This acquires a
+    /// permanent lock on `self.collection_receiver`.
     pub fn sync_recv(&self) {
-        for metrics in &self.collection_receiver {
+        let receiver = self.collection_receiver.lock().unwrap();
+        for metrics in receiver.iter() {
             self.collect(metrics)
         }
     }

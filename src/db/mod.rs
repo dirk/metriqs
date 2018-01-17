@@ -85,7 +85,7 @@ impl Db {
         if let Some(ref mutex) = self.aggregated_metrics {
             let mut cell = mutex.lock().unwrap();
             let aggregated_metrics = cell.get_mut();
-            for metric in aggregated.clone() {
+            for metric in &aggregated {
                 let (key, timeseries) = metric.into();
                 let values = aggregated_metrics.entry(key).or_insert_with(|| vec![]);
                 values.push(timeseries)
@@ -119,15 +119,15 @@ enum AggregatedKey {
     Gauge(Id),
 }
 
-impl Into<(AggregatedKey, (SystemTime, i32))> for AggregatedMetric {
+impl<'a> Into<(AggregatedKey, (SystemTime, i32))> for &'a AggregatedMetric {
     /// Convert an aggregated metric into a key and value for storage in the
     /// database's key-value store.
     fn into(self) -> (AggregatedKey, (SystemTime, i32)) {
         use self::AggregatedMetric::*;
 
         match self {
-            Count(time, id, value) => (AggregatedKey::Count(id), (time, value)),
-            Gauge(time, id, value) => (AggregatedKey::Gauge(id), (time, value)),
+            &Count(time, ref id, value) => (AggregatedKey::Count(id.to_owned()), (time, value)),
+            &Gauge(time, ref id, value) => (AggregatedKey::Gauge(id.to_owned()), (time, value)),
         }
     }
 }
